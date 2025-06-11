@@ -52,12 +52,14 @@ const Home = () => {
 
     fetch(API_BASE_URL + `/${USERNAME}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(newTask)
     })
       .then((response) => {
         if (!response.ok) throw new Error(response.statusText);
-        return response.json(); // aquí es un objeto nuevo
+        return response.json();
       })
       .then(() => {
         setInput("");
@@ -81,6 +83,23 @@ const Home = () => {
       .catch((error) => console.error("Error al eliminar tarea:", error.message));
   };
 
+  const clearAllTasks = async () => {
+    try {
+      const deletePromise = tasks.map(tasks =>
+        fetch(`${API_BASE_URL}/${tasks.id}`, {
+          method: "DELETE"
+        })
+      )
+
+      await Promise.all(deletePromise)
+
+      console.log("Tareas eliminadas")
+      fetchTodos()
+    } catch (error) {
+      console.error("Error al eliminar todas las tareas", error.message)
+    }
+  }
+
   return (
     <div className="app-container">
       <h1>Lista de Tareas</h1>
@@ -93,6 +112,9 @@ const Home = () => {
           onKeyDown={(e) => e.key === "Enter" && addTask()}
         />
         <button onClick={addTask}>Agregar</button>
+        <button className="clearAllButton" onClick={clearAllTasks}>
+          Eliminar todas las tareas
+        </button>
       </div>
 
       <div className="task-box">
