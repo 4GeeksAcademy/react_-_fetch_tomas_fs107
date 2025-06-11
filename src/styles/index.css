@@ -95,3 +95,11 @@ li {
   color: #999;
   font-style: italic;
 }
+
+.deleteButton:hover{
+  background-color: red;
+}
+
+.deleteButton{
+  background-color: white;
+}

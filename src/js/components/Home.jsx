@@ -3,7 +3,7 @@ import "../../styles/index.css";
 
 const USERNAME = "Tomas";
 const CREATE_USER_URL = `https://playground.4geeks.com/todo/users/${USERNAME}`;
-const API_TODO_URL = `https://playground.4geeks.com/todo/todos/${USERNAME}`;
+const API_BASE_URL = `https://playground.4geeks.com/todo/todos`;
 const GET_TASKS_URL = `https://playground.4geeks.com/todo/users/${USERNAME}`;
 
 const Home = () => {
@@ -21,15 +21,11 @@ const Home = () => {
       body: JSON.stringify([])
     })
       .then((response) => {
-        if (response.status === 400) {
-          fetchTodos();
-          return;
-        }
-        if (!response.ok) throw new Error(response.statusText);
+        if (!response.ok) throw new Error("El usuario ya existe");
         return response.json();
       })
-      .then(() => fetchTodos())
-      .catch((error) => console.error("Error:", error.message));
+      .then((data) => console.log("Usuario creado", data))
+      .catch((error) => console.error("Error al crear usuario:", error.message));
   };
 
   const fetchTodos = () => {
@@ -40,12 +36,13 @@ const Home = () => {
       })
       .then((data) => {
         const cleaned = data.todos.map(task => ({
+          id: task.id,
           label: task.label,
           is_done: task.is_done
         }));
         setTasks(cleaned);
       })
-      .catch((error) => console.error("Error:", error.message));
+      .catch((error) => console.error("Error al obtener tareas:", error.message));
   };
 
   const addTask = () => {
@@ -53,46 +50,40 @@ const Home = () => {
 
     const newTask = { label: input, is_done: false };
 
-    fetch(API_TODO_URL, {
+    fetch(API_BASE_URL + `/${USERNAME}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newTask)
     })
       .then((response) => {
         if (!response.ok) throw new Error(response.statusText);
-        return response.json();
+        return response.json(); // aquí es un objeto nuevo
       })
       .then(() => {
         setInput("");
         fetchTodos();
       })
-      .catch((error) => console.error("Error:", error.message));
+      .catch((error) => console.error("Error al añadir tarea:", error.message));
   };
 
-  const deleteTask = (indexToDelete) => {
-    const cleanedTasks = tasks
-      .filter((_, index) => index !== indexToDelete)
-      .map(task => ({
-        label: task.label,
-        is_done: task.is_done
-      }));
-
-    fetch(API_TODO_URL, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cleanedTasks)
+  const deleteTask = (taskId) => {
+    fetch(`${API_BASE_URL}/${taskId}`, {
+      method: "DELETE"
     })
       .then((response) => {
-        if (!response.ok) throw new Error(response.statusText);
-        return response.json();
+        if (!response.ok) throw new Error("No se pudo eliminar");
+        return response.text(); // porque devuelve un string como "ok"
       })
-      .then(() => fetchTodos())
-      .catch((error) => console.error("Error:", error.message));
+      .then((msg) => {
+        console.log("Respuesta de eliminación:", msg);
+        fetchTodos();
+      })
+      .catch((error) => console.error("Error al eliminar tarea:", error.message));
   };
 
   return (
     <div className="app-container">
-      <h1>📝 Lista de Tareas</h1>
+      <h1>Lista de Tareas</h1>
       <div className="input-section">
         <input
           type="text"
@@ -108,10 +99,10 @@ const Home = () => {
         {tasks.length === 0 ? (
           <p className="no-tasks">No hay tareas por ahora.</p>
         ) : (
-          tasks.map((task, index) => (
-            <div className="task-item" key={index}>
+          tasks.map((task) => (
+            <div className="task-item" key={task.id}>
               <span>{task.label}</span>
-              <button onClick={() => deleteTask(index)}>❌</button>
+              <button className="deleteButton" onClick={() => deleteTask(task.id)}>X</button>
             </div>
           ))
         )}
